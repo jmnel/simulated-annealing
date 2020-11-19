@@ -8,6 +8,8 @@ import matplotlib.patches as patches
 
 import numpy as np
 
+from gradient_descent import grad_descent
+
 
 def rosenbrock(x):
     x1, x2 = x
@@ -29,54 +31,77 @@ def goldstein_price(x):
                 * (18. - 32. * x1 + 12. * x1**2 + 48. * x2 - 36. * x1 * x2 + 27. * x2**2)))
 
 
-def grad_approx(f, x, tau=1e-14):
-    x1, x2 = x
-    return np.array([
-        (f([x1 + 0.5 * tau, x2]) - f([x1 - 0.5 * tau, x2])) / tau,
-        (f([x1, x2 + 0.5 * tau]) - f([x1, x2 - 0.5 * tau])) / tau])
-
-
-# def gen_point(dom):
-#    return np.random.random(2) * (dom[:, 1] - dom[:, 0]) + dom[:, 0]
-
-
 def gen_point_a(dom: np.ndarray):
     p = np.random.uniform(size=2) * (dom[1] - dom[0]) + dom[0]
+    return p
+
+
+def gen_point_b(dom: np.ndarray,
+                t: float,
+                x0: np.ndarray,
+                f: Callable,
+                method='exact',
+                **kwargs):
+
+    w = np.random.random()
+    if w > t:
+        p = np.random.uniform(size=2) * (dom[1] - dom[0]) + dom[0]
+    else:
+        p = grad_descent(f, x0, max_iterations=1, ls_method=method, **kwargs)
+
     return p
 
 
 def init_schedule(f: Callable,
                   dom: np.ndarray,
                   acceptance_ratio: float,
-                  m_trials: int):
+                  m_trials: int,
+                  method='alternative_b',
+                  **kwargs):
 
     chi = acceptance_ratio = 0.9
 
-    f_delta = [f(gen_point_a(dom)) - f(gen_point_a(dom)) for _ in range(m_trials)]
-    f_delta_plus = [e for e in f_delta if e > 0]
-    f_delta_plus = np.array(f_delta_plus)
+    if method == 'alternative_b':
+        chain = [gen_point_a(dom), ]
+        for m in range(m_trials - 1):
+            chain.append(gen_point_b(dom,
+                                     kwargs['t'],
+                                     chain[-1],
+                                     f,
+                                     method='exact'))
+#            print(f'chain {chain[-1]}')
 
-    cutoff = np.quantile(f_delta_plus, acceptance_ratio)
-    c0 = -cutoff / np.log(acceptance_ratio)
+        f_vals = np.array(list(map(f, chain)))
+        f_delta = np.diff(f_vals).tolist()
+        f_delta_plus = np.array([e for e in f_delta if e > 0.])
+        cutoff = np.quantile(f_delta_plus, acceptance_ratio)
+        c0 = -cutoff / np.log(acceptance_ratio)
+
+
+#    f_delta = [f(gen_point_a(dom)) - f(gen_point_a(dom)) for _ in range(m_trials)]
+#    f_delta_plus = [e for e in f_delta if e > 0]
+#    f_delta_plus = np.array(f_delta_plus)
+
+#    cutoff = np.quantile(f_delta_plus, acceptance_ratio)
+#    c0 = -cutoff / np.log(acceptance_ratio)
 
     return c0
 
 
 hist = list()
 
-DOM_DIM = 2
-L0 = 20
-L = DOM_DIM * L0
-DELTA = 0.2
-EPS = 1e-4
-CHI = 0.9
-# SMOOTHING = 1e-1
-SMOOTHING = 1.
 
+def fmin(f, dom,
+         l0,
+         delta,
+         eps,
+         chi,
+         smoothing,
+         t):
 
-def fmin(f, dom):
+    l = l0 * dom[0].ndim
 
-    c0 = init_schedule(f, dom, 0.9, 100)
+    c0 = init_schedule(f, dom, chi, 100, 'alternative_b', t=t)
     c = c0
 
     x = gen_point_a(dom)
@@ -92,9 +117,8 @@ def fmin(f, dom):
         m_2 = 0
 
         for i in range(L):
-            y = gen_point_a(dom)
-
-#            print(f'{n}:{i} -> c={c}, {np.exp(-(f(y)-f(x))/c)}')
+            #            y = gen_point_a(dom)
+            y = gen_point_b(dom, T, x, f, method='exact')
 
             # Accept new point if it is downhill.
             if f(y) - f(x) <= 0.:
@@ -133,7 +157,7 @@ def fmin(f, dom):
         if len(f_at_c) > 0:
             sigma = np.std(f_at_c)
 #            if sigma == 0.:
-#                sigma = 1e-14
+#                sigma = 1e-28
             c_old = c
 #            print(f'{n} -> c={c}, sigma={sigma}, len of chain: {len(f_at_c)}')
             c = c / (1. + (c * np.log(1. + DELTA)) / (3. * sigma))
@@ -177,32 +201,27 @@ def fmin(f, dom):
     return x
 
 
-dom = np.array([[-2, -1], [2, 3]])
-f = rosenbrock
+DOM_DIM = 2
+L0 = 40
+L = DOM_DIM * L0
+DELTA = 0.2
+EPS = 1e-6
+CHI = 0.9
+SMOOTHING = 0.01
+T = 0.2
 
-#f = goldstein_price
-#dom = np.array([[-2, -2], [2, 2]])
+#DOM = np.array([[-2, -1], [2, 3]])
+#f = rosenbrock
 
-res = fmin(f, dom)
+f = goldstein_price
+dom = np.array([[-2, -2], [2, 2]])
+
+res = fmin(f,
+           dom=dom,
+           l0=L0,
+           delta=DELTA,
+           eps=EPS,
+           chi=CHI,
+           smoothing=SMOOTHING,
+           t=T)
 print(f'solution x={res}')
-# n_samples = 200
-# xlim = [-2, 2]
-# ylim = [-1, 3]
-# x, y = np.linspace(*xlim, n_samples), np.linspace(*ylim, n_samples)
-# mx, my = np.meshgrid(x, y)
-# z = np.power(rosenbrock([mx, my]), 0.1)
-
-# fig, ax = plt.subplots(1, 1)
-# ax.contourf(x, y, z)
-
-# h_x = [h[-1][0] for h in hist]
-# h_y = [h[-1][1] for h in hist]
-
-# s_x = h_x[-1:]
-# s_y = h_y[-1:]
-# ax.scatter(s_x, s_y, c='red')
-
-# plt.show()
-
-# init_schedule(f, dom, acceptance_ratio=0.9, m_trials=100000)
-# sa(f)
