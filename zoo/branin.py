@@ -1,18 +1,21 @@
 import sympy as sym
 
-from benchmark import Benchmark
+from .benchmark import Benchmark
 
 
-class Rosenberg(Benchmark):
+class Branin(Benchmark):
 
     def __init__(self):
         super().__init__()
 
         self.name = "branin"
-        x1, x2 = sym.symbols('x_1 x_2')
+
+        x = sym.IndexedBase('x')
+        i = sym.Idx('i')
+        x1, x2 = x[1], x[2]
         self.x = [x1, x2]
 
-        a, b = sym.symbols('a b c d e f')
+        a, b, c, d, e, f = sym.symbols('a b c d e f')
         self.params = {'a': [a, 1],
                        'b': [b, 5.1 / (4 * sym.pi**2)],
                        'c': [c, 5 / sym.pi],

@@ -11,24 +11,24 @@ import numpy as np
 from gradient_descent import grad_descent
 
 
-def rosenbrock(x):
-    x1, x2 = x
-    a, b = 1, 100
-    return (a - x1)**2 + b * (x2 - x1**2)**2
+# def rosenbrock(x):
+#    x1, x2 = x
+#    a, b = 1, 100
+#    return (a - x1)**2 + b * (x2 - x1**2)**2
 
 
-def g_rosenbrock(x):
-    a, b = 1, 100
-    return np.array([-2. * (a - x1) - 2. * b * x1 * (x2 - x1**2),
-                     b * 2. * (x2 - x1**2)])
+# def g_rosenbrock(x):
+#    a, b = 1, 100
+#    return np.array([-2. * (a - x1) - 2. * b * x1 * (x2 - x1**2),
+#                     b * 2. * (x2 - x1**2)])
 
 
-def goldstein_price(x):
-    x1, x2 = x
-    return ((1. + (x1 + x2 + 1)**2 *
-             (19. - 14. * x1 + 3. * x1**2 - 14. * x2 + 6. * x1 * x2 + 3. * x2**2))
-            * (30. + (2. * x1 - 3. * x2)**2
-                * (18. - 32. * x1 + 12. * x1**2 + 48. * x2 - 36. * x1 * x2 + 27. * x2**2)))
+# def goldstein_price(x):
+#    x1, x2 = x
+#    return ((1. + (x1 + x2 + 1)**2 *
+#             (19. - 14. * x1 + 3. * x1**2 - 14. * x2 + 6. * x1 * x2 + 3. * x2**2))
+#            * (30. + (2. * x1 - 3. * x2)**2
+#                * (18. - 32. * x1 + 12. * x1**2 + 48. * x2 - 36. * x1 * x2 + 27. * x2**2)))
 
 
 def gen_point_a(dom: np.ndarray):
@@ -201,27 +201,27 @@ def fmin(f, dom,
     return x
 
 
-DOM_DIM = 2
-L0 = 40
-L = DOM_DIM * L0
-DELTA = 0.2
-EPS = 1e-6
-CHI = 0.9
-SMOOTHING = 0.01
-T = 0.2
+#DOM_DIM = 2
+#L0 = 10
+#L = DOM_DIM * L0
+#DELTA = 0.1
+#EPS = 1e-4
+#CHI = 0.9
+#SMOOTHING = 0.01
+#T = 0.75
 
 #DOM = np.array([[-2, -1], [2, 3]])
 #f = rosenbrock
 
-f = goldstein_price
-dom = np.array([[-2, -2], [2, 2]])
+#f = goldstein_price
+#dom = np.array([[-2, -2], [2, 2]])
 
-res = fmin(f,
-           dom=dom,
-           l0=L0,
-           delta=DELTA,
-           eps=EPS,
-           chi=CHI,
-           smoothing=SMOOTHING,
-           t=T)
-print(f'solution x={res}')
+# res = fmin(f,
+#           dom=dom,
+#           l0=L0,
+#           delta=DELTA,
+#           eps=EPS,
+#           chi=CHI,
+#           smoothing=SMOOTHING,
+#           t=T)
+#print(f'solution x={res}')

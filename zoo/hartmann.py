@@ -1,0 +1,45 @@
+from pprint import pprint
+
+import sympy as sym
+import numpy as np
+
+from .benchmark import Benchmark
+
+
+class Hartmann3(Benchmark):
+
+    def __init__(self):
+        super().__init__()
+
+        self.name = "hartmann3"
+
+        m, n = 4, 3
+        x = sym.IndexedBase('x')
+        self.x = [x[i] for i in range(0, m)]
+
+        i, j = sym.Idx('i'), sym.Idx('j')
+        a = sym.IndexedBase('a')
+        c = sym.IndexedBase('c')
+        p = sym.IndexedBase('p')
+
+        a_ij = np.array([[3, 10, 30],
+                         [0.1, 10, 35],
+                         [3, 10, 30],
+                         [0.1, 10, 35]])
+        c_i = np.array([1, 1.2, 3., 3.2])
+        p_ij = np.array([[0.3689, 0.1170, 0.2673],
+                         [0.4699, 0.4387, 0.7470],
+                         [0.1091, 0.8732, 0.5547],
+                         [0.038150, 0.5743, 0.8828]])
+
+        c_params = {f'c[{i}]': [c[i], c_i[i]] for i in range(m)}
+        a_params = {f'a[{i},{j}]': [a[i, j], a_ij[i, j]] for i in range(m) for j in range(n)}
+        p_params = {f'p[{i},{j}]': [p[i, j], p_ij[i, j]] for i in range(m) for j in range(n)}
+
+        self.params = {**c_params, **a_params, **p_params}
+
+        self.expr = -sym.Sum(c[i] * sym.exp(-sym.Sum(a[i, j] * (x[i] - p[i, j])**2,
+                                                     (j, 0, n - 1))), (i, 0, m - 1))
+        self.xmin = [[p_ij[i, j] for j in range(n)] for i in range(m)]
+        self.domain = [np.zeros(n), np.ones(n)]
+        self.domain_plot = None

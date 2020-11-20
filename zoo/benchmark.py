@@ -32,7 +32,9 @@ class Benchmark():
                 bench.params[key][1] = value
 
         subs_list = {symbol: value for _, (symbol, value) in bench.params.items()}
-        f = bench.expr.subs(subs_list)
+        f = bench.expr \
+            .doit() \
+            .subs(subs_list)
 
         bench._f = sym.lambdify(bench.x, f)
         bench._grad = [sym.lambdify(bench.x, sym.diff(f, x_i)) for x_i in bench.x]

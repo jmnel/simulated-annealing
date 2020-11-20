@@ -1,6 +1,6 @@
 import sympy as sym
 
-from benchmark import Benchmark
+from .benchmark import Benchmark
 
 
 class Rosenbrock(Benchmark):
@@ -12,7 +12,6 @@ class Rosenbrock(Benchmark):
         x = sym.IndexedBase('x')
         i = sym.Idx('i')
         x1, x2 = x[1], x[2]
-#        x1, x2 = sym.symbols('x_1 x_2')
         self.x = [x1, x2]
 
         a, b = sym.symbols('a b')
