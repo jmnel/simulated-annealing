@@ -1,22 +1,17 @@
 
-# Multistart method is two-step:
-# 1. Solution construction
-# 2. Solution improvement
-def multi_start(K, tol):
-    # initialize i and the bests
+import random as rnd
+import numpy as np
+
+def multi_start(n, a, b, K, f, tol):
     i = 1
-    old_best = 0
-    new_best = np.inf
-    # assume stopping condition is when |new_best - old_best| < tol and
-    #                               when i reaches the maximum iteration number K
-    while(i <= K and abs(new_best - old_best) < tol):
-        # Step 1: Solution consstruction
-        x = fmin(f, dom, l0, delta, eps, chi, smoothing, t)
-        # Step 2: Solution improvement
-        improved_x = grad_descent(f, x, grad=None, tol=1e-14, max_iterations=10000, ls_method='exact', eps=1e-14)
-        if (improved_x < new_best):
-            old_best = new_best
-            new_best = improved_x
+    x_stars = [] # will hold all x_stars
+    f_xstars = [] # will hold all values of f(x_star), where x_star is in x_stars
+
+    while(i <= K):
+        x = np.random.uniform(a, b, n)
+        x_star = grad_descent(f, x, grad=None, tol=1e-14, max_iterations=10000, ls_method='exact', eps=1e-14, method='steepest_descent')
+        x_stars.append(x_star)
+        f_xstars.append(f(x_star))
         i += 1
-    return new_best
-        
+
+    return x_stars[np.argmin(f_xstars)]
