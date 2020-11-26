@@ -5,7 +5,7 @@ import sympy as sym
 sym.init_printing(use_latex=True)
 import numpy as np
 
-from benchmark import Benchmark
+from .benchmark import Benchmark
 
 
 class Shekel(Benchmark):
@@ -53,6 +53,3 @@ class Shekel(Benchmark):
         self.xmin = [[a_ij[i, j] for j in range(n)] for i in range(m)]
         self.domain = [np.zeros(n), np.ones(n)]
         self.domain_plot = None
-
-
-#q = Shekel(m=5)

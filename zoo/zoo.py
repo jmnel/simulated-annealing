@@ -12,8 +12,10 @@ from sympy.parsing.latex import parse_latex
 import numpy as np
 
 from .rosenbrock import Rosenbrock
+from .goldstein_price import GoldsteinPrice
 from .branin import Branin
-from .hartmann import Hartmann3
+from .hartmann import Hartmann3, Hartmann6
+from .shekel import Shekel
 
 
 class Zoo():
@@ -27,8 +29,13 @@ class Zoo():
 
     def __init__(self):
 
-        benches = [Rosenbrock(), Branin(), Hartmann3()]
-        self.benchmarks = {bench.name: bench for bench in benches}
+        self.benchmarks = {'rosenbrock': Rosenbrock,
+                           'goldstein_price': GoldsteinPrice,
+                           'branin': Branin,
+                           'hartmann3': Hartmann3,
+                           'hartmann6': Hartmann6,
+                           'shekel': Shekel}
+#        self.benchmarks = {'rosenbrock': bench for bench in benches}
 
     def get(self, name: str, **kwargs) -> Benchmark:
         """
@@ -47,7 +54,7 @@ class Zoo():
         if name not in self.benchmarks:
             raise ValueError(f'benchmark "{name}" is not available')
 
-        return self.benchmarks[name].make_explicit(**kwargs)
+        return self.benchmarks[name](**kwargs).make_explicit(**kwargs)
 
     def list_benchmarks(self) -> List[str]:
         return list(self.benchmarks.keys())

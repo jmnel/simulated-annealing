@@ -11,31 +11,31 @@ import numpy as np
 from gradient_descent import grad_descent
 
 
-def _gen_point_a(domain: np.ndarray):
-    p = np.random.uniform(size=2) * (domain[1] - domain[0]) + domain[0]
+def _gen_point_a(dom: np.ndarray):
+    p = np.random.uniform(size=2) * (dom[1] - dom[0]) + dom[0]
     return p
 
 
-def _gen_point_b(domain: np.ndarray,
-                 descent_affinity: float,
+def _gen_point_b(dom: np.ndarray,
+                 t: float,
                  x0: np.ndarray,
                  f: Callable,
                  method='exact',
                  **kwargs):
 
     w = np.random.random()
-    if w > descent_affinity:
-        p = np.random.uniform(size=2) * (domain[1] - domain[0]) + domain[0]
+    if w > t:
+        p = np.random.uniform(size=2) * (dom[1] - dom[0]) + dom[0]
 
     else:
         p = grad_descent(f, x0, max_iterations=1, ls_method=method, **kwargs)
-        p = np.clip(p, domain[0], domain[1])
+        p = np.clip(p, dom[0], dom[1])
 
     return p
 
 
 def _init_schedule(f: Callable,
-                   domain: np.ndarray,
+                   dom: np.ndarray,
                    acceptance_ratio: float,
                    m_trials: int,
                    method='alternative_b',
@@ -44,10 +44,10 @@ def _init_schedule(f: Callable,
     chi = acceptance_ratio = 0.9
 
     if method == 'alternative_b':
-        chain = [_gen_point_a(domain), ]
+        chain = [_gen_point_a(dom), ]
         for m in range(m_trials - 1):
-            chain.append(_gen_point_b(domain,
-                                      kwargs['descent_affinity'],
+            chain.append(_gen_point_b(dom,
+                                      kwargs['t'],
                                       chain[-1],
                                       f,
                                       method='exact'))
@@ -61,30 +61,27 @@ def _init_schedule(f: Callable,
     return c0
 
 
-#hist = list()
+hist = list()
 
 
-def simulated_annealing(f,
-                        domain,
-                        l0,
-                        delta,
-                        stop_eps,
-                        chi,
-                        smoothing,
-                        descent_affinity,
-                        callback=None):
+def fmin(f, dom,
+         l0,
+         delta,
+         eps,
+         chi,
+         smoothing,
+         t):
 
-    l = l0 * domain[0].ndim
+    l = l0 * dom[0].ndim
 
-    # Initialize temperature schedule.
-    c0 = _init_schedule(f, domain, chi, 100, 'alternative_b', descent_affinity=descent_affinity)
+    c0 = _init_schedule(f, dom, chi, 100, 'alternative_b', t=t)
     c = c0
+    print(f'c0={c0}')
 
-    # Generate starting point.
-    x = _gen_point_a(domain)
-
+    x = _gen_point_a(dom)
     f_record = None
-#    hist_new = list()
+
+    hist_new = list()
 
     n = 0
     while True:
@@ -100,8 +97,8 @@ def simulated_annealing(f,
         m_2 = 0
 
         for i in range(L):
-            #            y = _gen_point_a(domain)
-            y = _gen_point_b(domain, T, x, f, method='exact')
+            #            y = _gen_point_a(dom)
+            y = _gen_point_b(dom, T, x, f, method='exact')
 
             # Accept new point if it is downhill.
             if f(y) - f(x) <= 0.:
@@ -118,18 +115,17 @@ def simulated_annealing(f,
             else:
                 pass
 
-#            hist_new.append(x)
-#            if len(hist_new) > 1000:
-#                hist_new = hist_new[-1000:]
+            hist_new.append(x)
+            if len(hist_new) > 1000:
+                hist_new = hist_new[-1000:]
 
             f_at_c.append(f(x))
 
             if f_at_c[-1] < f_record:
                 f_record = f_at_c[-1]
 
-
-#        if len(hist_inner) > 0:
-#            hist.append(hist_inner)
+        if len(hist_inner) > 0:
+            hist.append(hist_inner)
 
         f_bar = np.mean(f_at_c)
 
@@ -138,14 +134,15 @@ def simulated_annealing(f,
 
         if n > 0:
             f_bar_s_old = f_bar_s
-            f_bar_s = (1.0 - smoothing) * f_bar_s + smoothing * f_bar
+            f_bar_s = (1.0 - SMOOTHING) * f_bar_s + SMOOTHING * f_bar
         else:
             f_bar_s = f_bar
 
         if len(f_at_c) > 0:
             sigma = np.std(f_at_c)
             c_old = c
-            c = c / (1. + (c * np.log(1. + delta)) / (3. * sigma))
+            try:
+                c = c / (1. + (c * np.log(1. + DELTA)) / (3. * sigma))
 
         y = f_record
         f_star = 0
@@ -156,38 +153,41 @@ def simulated_annealing(f,
             d_fbar_s = f_bar_s - f_bar_s_old
 
             stop_term = np.abs((c * d_fbar_s) / (dc * f_bar_0))
-            should_stop = stop_term < stop_eps
 
-#            if n % 10 == 0 or should_stop:
-#                print(f'{n} -> c={c}')
-#                n_samples = 200
+            should_stop = stop_term < EPS
+
+#            should_stop = c < 1e-24
+
+            if n % 10 == 0 or should_stop:
+                print(f'{n} -> c={c}')
+                n_samples = 200
 #                xlim = [-5, 5]
 #                ylim = [-5, 7]
 #                xlim = [-2, 3]
 #                ylim = [-2, 3]
 #                xlim = [-5, 10]
 #                ylim = [-0, 15]
-#                xlim = [-3, 3]
-#                ylim = [-3, 3]
-#                x_plt, y_plt = np.linspace(*xlim, n_samples), np.linspace(*ylim, n_samples)
-#                mx, my = np.meshgrid(x_plt, y_plt)
-#                z = np.power(f([mx, my]), 0.1)
+                xlim = [-3, 3]
+                ylim = [-3, 3]
+                x_plt, y_plt = np.linspace(*xlim, n_samples), np.linspace(*ylim, n_samples)
+                mx, my = np.meshgrid(x_plt, y_plt)
+                z = np.power(f([mx, my]), 0.1)
 
-#                fig, ax = plt.subplots(1, 1)
-#                ax.contourf(x_plt, y_plt, z, levels=50)
+                fig, ax = plt.subplots(1, 1)
+                ax.contourf(x_plt, y_plt, z, levels=50)
 
-#                ax.scatter([x[0], ], [x[1], ], c='red')
+                ax.scatter([x[0], ], [x[1], ], c='red')
 
-#                ax.plot(*tuple(zip(*hist_new)), color='magenta')
+                ax.plot(*tuple(zip(*hist_new)), color='magenta')
 
-#                plt.show()
+                plt.show()
 
             if should_stop:
                 break
 
         n += 1
 
-    return x, n
+    return x
 
 
 from zoo import Zoo
@@ -196,20 +196,20 @@ obj = Zoo().get('goldstein_price').make_explicit()
 #obj = Zoo().get('branin').make_explicit()
 #obj = Zoo().get('rosenbrock').make_explicit()
 f, grad = obj.f, obj.grad
-domain, plt_domain = obj.domain, obj.domain_plot
-domain = np.array(domain)
+dom, plt_dom = obj.domain, obj.domain_plot
+dom = np.array(dom)
 
-# pprint(domain)
+# pprint(dom)
 # exit()
 
 DOM_DIM = 2
-L0 = 20
+L0 = 100
 L = DOM_DIM * L0
-DELTA = 0.1
-EPS = 1e-4
+DELTA = 0.01
+EPS = 1e-17
 CHI = 0.9
-SMOOTHING = 0.01
-#SMOOTHING = 0.05
+#SMOOTHING = 0.01
+SMOOTHING = 0.05
 #T = 0.0
 T = 0.75
 
@@ -217,13 +217,13 @@ T = 0.75
 # print(f(obj.xmin[0]))
 # exit()
 
-res = simulated_annealing(f,
-                          domain=domain,
-                          l0=L0,
-                          delta=DELTA,
-                          stop_eps=EPS,
-                          chi=CHI,
-                          smoothing=SMOOTHING,
-                          descent_affinity=T)
+res = fmin(f,
+           dom=dom,
+           l0=L0,
+           delta=DELTA,
+           eps=EPS,
+           chi=CHI,
+           smoothing=SMOOTHING,
+           t=T)
 
 print(f'solution x={res}')

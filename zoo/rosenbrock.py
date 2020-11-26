@@ -20,7 +20,7 @@ class Rosenbrock(Benchmark):
                        }
 
         self.expr = (a - x1)**2 + b * (x2 - x1**2)**2
-        self.xmin = [[a, a**2 * sym.pi], ]
+        self.xmin = [[a, a**2], ]
 
         self.domain = [[-2., -1.], [2., 2.]]
         self.domain_plot = [[-2., -2.], [3., 3.]]

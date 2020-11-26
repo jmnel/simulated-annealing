@@ -1,6 +1,6 @@
 import sympy as sym
 
-from benchmark import Benchmark
+from .benchmark import Benchmark
 
 
 class GoldsteinPrice(Benchmark):
@@ -19,5 +19,5 @@ class GoldsteinPrice(Benchmark):
 
         self.expr = term1 * term2
         self.xmin = [[0., -1.], ]
-        self.domain = [[-2., -2.], [-2., 2.]]
+        self.domain = [[-2., -2.], [2., 2.]]
         self.domain_plot = [[-2., -2.], [2., 2.]]

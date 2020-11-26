@@ -5,7 +5,7 @@ import sympy as sym
 sym.init_printing(use_latex=True)
 import numpy as np
 
-from benchmark import Benchmark
+from .benchmark import Benchmark
 
 
 class Schubert(Benchmark):
@@ -19,10 +19,6 @@ class Schubert(Benchmark):
         self.name = f"schubert {case}"
 
         def u(x_i, a, k, m):
-            #            a, k, m = symbols('a k m')
-
-            #            x = IndexedBase('x')
-            #            i = Idx('i')
 
             return sym.Piecewise(
                 (k * (x_i - a)**m, sym.Gt(x_i, a)),
@@ -42,47 +38,44 @@ class Schubert(Benchmark):
             term1 = sym.Sum(i * sym.cos((i + 1) * x[0] + 1), (i, 0, 4))
             term2 = sym.Sum(i * sym.cos((i + 1) * x[1] + 1), (i, 0, 4))
 
-            self.expr = term1 * term2 + u(x[0], a, k, m)
+            self.expr = term1 * term2 + u(x[0], a, k, m) + u(x[1], a, k, m)
+            self.params = {'a': [a, 10.],
+                           'k': [k, 100.],
+                           'm': [m, 2]}
 
-#            print(repr(u(x[i], 0.2, k, m)))
+            self.xmin = None
+            self.domain = [-10. * np.ones(n), 10. * np.ones(n)]
+            self.domain_plot = self.domain
 
-            print(repr(self.expr))
+        elif case == 'p8':
+            n = 3
+            x = sym.IndexedBase('x')
+            self.x = [x[i] for i in range(0, n)]
 
-#        var_x = sym.Matrix(self.x)
+            y = sym.IndexedBase('y')
 
-#        i, j = sym.Idx('i'), sym.Idx('j')
-#        a = sym.IndexedBase('a')
-#        c = sym.IndexedBase('c')
+            i = sym.Idx('i')
 
-#        a_ij = np.array([[4., 4., 4., 4.],
-#                         [1., 1., 1., 1.],
-#                         [8., 8., 8., 8.],
-#                         [6., 6., 6., 6.],
-#                         [3., 7., 3., 7.],
-#                         [2., 9., 2., 9.],
-#                         [5., 5., 3., 3.],
-#                         [8., 1., 8., 1.],
-#                         [6., 2., 6., 2.],
-#                         [7., 3.6, 7., 3.6]])
-#        c_i = np.array([0.1, 0.2, 0.2, 0.4, 0.4, 0.6, 0.3, 0.7, 0.5, 0.5])
+            k_1, k_2 = sym.symbols('k_1 k_2')
 
-#        a_ij = a_ij[:m]
-#        c_i = c_i[:m]
+            pprint(y)
 
-#        c_params = {f'c[{i}]': [c[i], c_i[i]] for i in range(m)}
-#        a_params = {f'a[{i},{j}]': [a[i, j], a_ij[i, j]] for i in range(m) for j in range(n)}
+            self.expr = (sym.pi / n) * (
+                k_1 * sym.sin(sym.pi * y[0])**2
+                + sym.Sum((y[i] - k_2)**2
+                          * (1. + k_1 * sym.sin(sym.pi * y[i + 1])**2), (i, 0, n - 2))
+                + (y[n - 1] - k_2)**2) \
+                + sym.Sum(u(x[i], a, k, m), (i, 0, n - 1))
 
-#        self.params = {**c_params, **a_params}
+            y_subs = {y[i]: 1. + 0.25 * (x[i] + 1.) for i in range(n)}
+            self.expr = self.expr.doit().subs(y_subs)
 
-#        self.expr = -sym.Sum(1.0 / (sym.Sum((x[j] - a[i, j])**2, (j, 0, n - 1)) + c[i]), (i, 0, n - 1))
+            self.params = {'a': [a, 10.],
+                           'k': [k, 100.],
+                           'm': [m, 4],
+                           'k_1': [k_1, 10.],
+                           'k_2': [k_2, 1.]}
 
-#        self.xmin = [[a_ij[i, j] for j in range(n)] for i in range(m)]
-#        self.domain = [np.zeros(n), np.ones(n)]
-#        self.domain_plot = None
-
-
-# q = Shekel(m=5)
-
-q = Schubert(case='p3')
-
-# print(q)
+            self.xmin = [[1., 1., 1.], ]
+            self.domain = [-10. * np.ones(n), 10. * np.ones(n)]
+            self.domain_plot = None
