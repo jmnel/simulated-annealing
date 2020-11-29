@@ -8,7 +8,8 @@ class GoldsteinPrice(Benchmark):
     def __init__(self):
         super().__init__()
 
-        self.name = "goldstein_price"
+        self.name = 'Goldstein-Price'
+        self.name_short = 'GP'
         x1, x2 = sym.symbols('x_1 x_2')
         self.x = [x1, x2]
 

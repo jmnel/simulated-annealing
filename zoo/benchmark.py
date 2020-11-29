@@ -13,6 +13,7 @@ class Benchmark():
     def __init__(self):
 
         self.name = None
+        self.name_short = None
         self.x = None
         self.params = list()
         self.expr = None

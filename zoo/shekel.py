@@ -16,7 +16,8 @@ class Shekel(Benchmark):
         if m not in {5, 7, 10}:
             raise ValueError('m must be one of 5, 7, or 10')
 
-        self.name = "hartmann3"
+        self.name = f'Shekel\' family m={m}'
+        self.name_short = f'S{m}'
 
         n = 4
         x = sym.IndexedBase('x')

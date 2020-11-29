@@ -8,7 +8,8 @@ class Rosenbrock(Benchmark):
     def __init__(self):
         super().__init__()
 
-        self.name = "rosenbrock"
+        self.name = 'Rosenbrock'
+        self.name_short = 'RB'
         x = sym.IndexedBase('x')
         i = sym.Idx('i')
         x1, x2 = x[1], x[2]

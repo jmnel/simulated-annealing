@@ -11,7 +11,8 @@ class Hartmann3(Benchmark):
     def __init__(self):
         super().__init__()
 
-        self.name = "hartmann3"
+        self.name = 'Hartmann\'s family n=3'
+        self.name_short = 'H3'
 
         m, n = 4, 3
         x = sym.IndexedBase('x')
@@ -50,9 +51,10 @@ class Hartmann6(Benchmark):
     def __init__(self):
         super().__init__()
 
-        self.name = "hartmann3"
+        self.name = 'Hartmann\'s family n=3'
+        self.name_short = 'H6'
 
-        m, n = 4, 3
+        m, n = 4, 6
         x = sym.IndexedBase('x')
         self.x = [x[i] for i in range(0, m)]
 

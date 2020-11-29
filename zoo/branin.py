@@ -8,7 +8,8 @@ class Branin(Benchmark):
     def __init__(self):
         super().__init__()
 
-        self.name = "branin"
+        self.name = 'Branin'
+        self.name_short = 'BR'
 
         x = sym.IndexedBase('x')
         i = sym.Idx('i')

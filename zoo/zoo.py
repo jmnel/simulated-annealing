@@ -29,12 +29,12 @@ class Zoo():
 
     def __init__(self):
 
-        self.benchmarks = {'rosenbrock': Rosenbrock,
-                           'goldstein_price': GoldsteinPrice,
-                           'branin': Branin,
-                           'hartmann3': Hartmann3,
-                           'hartmann6': Hartmann6,
-                           'shekel': Shekel}
+        self.benchmarks = {'RB': Rosenbrock,
+                           'GP': GoldsteinPrice,
+                           'BR': Branin,
+                           'H3': Hartmann3,
+                           'H6': Hartmann6,
+                           'S': Shekel}
 #        self.benchmarks = {'rosenbrock': bench for bench in benches}
 
     def get(self, name: str, **kwargs) -> Benchmark:
