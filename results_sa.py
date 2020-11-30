@@ -17,10 +17,10 @@ TOL_SAME = 1e-6
 
 SA_L0 = 20
 SA_DELTA = 1.1
-SA_STOP_EPS = 1e-4
+SA_STOP_EPS = 1e-5
 SA_CHI = 0.9
 SA_GAMMA = 1e-2
-SA_T = 0.5
+SA_T = 0.1
 
 
 objectives = [
