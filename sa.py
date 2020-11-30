@@ -1,178 +1,207 @@
-from typing import Callable
+from typing import Callable, Dict
 
 from scipy.stats import chi2
 import numpy as np
+import scipy.optimize as optim
 
+import zoo
 from gradient_descent import grad_descent
 
 
-def _gen_point_a(domain: np.ndarray):
-    p = np.random.uniform(size=2) * (domain[1] - domain[0]) + domain[0]
-    return p
-
-
-def _gen_point_b(domain: np.ndarray,
-                 descent_affinity: float,
-                 x0: np.ndarray,
-                 f: Callable,
-                 method='exact',
-                 **kwargs):
-
-    w = np.random.random()
-    if w > descent_affinity:
-        p = np.random.uniform(size=2) * (domain[1] - domain[0]) + domain[0]
-
-    else:
-        p = grad_descent(f, x0, max_iterations=1, ls_method=method, **kwargs)
-        p = np.clip(p, domain[0], domain[1])
-
-    return p
-
-
-def _init_schedule(f: Callable,
-                   domain: np.ndarray,
-                   acceptance_ratio: float,
-                   m_trials: int,
-                   method='alternative_b',
-                   **kwargs):
-
-    chi = acceptance_ratio = 0.9
-
-    if method == 'alternative_b':
-        chain = [_gen_point_a(domain), ]
-        for m in range(m_trials - 1):
-            chain.append(_gen_point_b(domain,
-                                      kwargs['descent_affinity'],
-                                      chain[-1],
-                                      f,
-                                      method='exact'))
-
-        f_vals = np.array(list(map(f, chain)))
-        f_delta = np.diff(f_vals).tolist()
-        f_delta_plus = np.array([e for e in f_delta if e > 0.])
-        cutoff = np.quantile(f_delta_plus, acceptance_ratio)
-        c0 = -cutoff / np.log(acceptance_ratio)
-
-    return c0
-
-
-def _init_schedule_2(f: Callable,
-                     domain: np.ndarray,
-                     acceptance_ratio: float,
-                     m_trials: int,
-                     method='alternative_b',
-                     **kwargs):
-
-    chi = 0.9
-
-    x = [_gen_point_a(domain), ]
-    for m in range(m_trials - 1):
-        x.append(_gen_point_b(domain,
-                              kwargs['descent_affinity'],
-                              x[-1],
-                              f,
-                              method='exact'))
-
-    f_vals = np.array(list(map(f, x)))
-    f_delta = np.diff(f_vals).tolist()
-    f_delta_plus = [fd for fd in f_delta if fd > 0.]
-    m_2 = len(f_delta_plus)
-    m_1 = m_trials - m_2
-    f_delta_plus_avg = np.mean(f_delta_plus)
-
-    m_1, m_2 = m_2, m_1
-
-    c0 = f_delta_plus_avg / (np.log(m_2 / (m_2 * chi + (1. - chi) * m_1)))
-
-    return c0
-
-
 def simulated_annealing(f: Callable,
-                        grad: Callable,
+                        jac: Callable,
                         domain: np.ndarray,
                         l0: int,
                         delta: float,
                         stop_eps: float,
                         chi: float,
                         gamma: float,
-                        descent_affinity: float,
-                        callback: Callable = None):
+                        t: float,
+                        init_trials: int = 200,
+                        callback: Callable = None,
+                        tol: float = 1e-7,
+                        polish: bool = True,
+                        polish_minimizer: Callable = optim.minimize,
+                        polish_kwargs: Dict = dict()):
 
+    dims = domain.shape[1]
+
+#    print(f'dims={dims}')
+
+    if 'tol' not in polish_kwargs:
+        polish_kwargs['tol'] = tol
+
+    def gen_point_a():
+        p = np.random.uniform(size=dims) * (domain[1] - domain[0]) + domain[0]
+        return p
+
+    def gen_point_b(x0: np.ndarray):
+
+        w = np.random.random()
+        if w > t:
+            p = np.random.uniform(size=dims) * (domain[1] - domain[0]) + domain[0]
+
+        else:
+            dd_result = grad_descent(f, x0, jac, max_iterations=1)
+
+            # Update f and grad f evaluation count stats.
+            result.nfev += dd_result.nfev
+            result.njev += dd_result.njev
+
+            p = dd_result.x
+            p = np.clip(p, domain[0], domain[1])
+
+        return p
+
+    def init_schedule():
+
+        # Generate starting point for initial Markov chain.
+        chain = [gen_point_a(), ]
+
+        # Proceed to generate example Markov chain.
+        for m in range(init_trials - 1):
+            chain.append(gen_point_b(x0=chain[-1]))
+
+        # Evaluate f at each point in chain and take 1-lag difference.
+        f_vals = np.array(list(map(f, chain)))
+        f_delta = np.diff(f_vals).tolist()
+
+        # Update f evaluation count stats.
+        result.nfev += len(chain)
+
+        # Filter for only positive delta values.
+        f_delta_plus = np.array([e for e in f_delta if e > 0.])
+
+        # Use chi to calculate cuffoff value of delta.
+        cutoff = np.quantile(f_delta_plus, chi)
+
+        # Solve for C0.
+        c0 = -cutoff / np.log(chi)
+
+        return c0
+
+    # ----------------------------------
+
+    # Create object to hold results and running stats.
+    result = optim.OptimizeResult()
+    result.nfev = 0
+    result.njev = 0
+
+    # Set Markov chain length.
     l = l0 * domain[0].ndim
 
-    # Initialize temperature schedule.
-    c0 = _init_schedule_2(f, domain, chi, 100, 'alternative_b', descent_affinity=descent_affinity)
+    # Initialize cooling schedule.
+    c0 = init_schedule()
     c = c0
 
     # Generate starting point.
-    x = _gen_point_a(domain)
-
-    f_record = None
+    x = gen_point_a()
 
     x_smooth = x
 
     n = 0
     while True:
 
-        if f_record is None:
-            f_record = f(x)
-
         m_1 = 0
         m_2 = 0
 
         f_at_c = list()
+        f_at_c = [f(x), ]
 
         current_chain = list()
-        while len(f_at_c) < 10:
-            for i in range(l):
-                y = _gen_point_b(domain, descent_affinity, x, f, method='exact')
+        for i in range(l):
 
-                # Accept new point if it is downhill.
-                if f(y) - f(x) <= 0.:
-                    x = y
-                    m_1 += 1
-                    f_at_c.append(f(x))
-                    current_chain.append(x)
+            # Generate next candidiate in Markov chain.
+            y = gen_point_b(x0=x)
 
-                # Otherwise, use acceptance criteria.
-                elif np.exp(-(f(y) - f(x)) / c) > np.random.random():
-                    x = y
-                    m_2 += 1
-                    f_at_c.append(f(x))
-                    current_chain.append(x)
+            # Evaluate f at x and y; this is wasteful and can be improved.
+            f_at_x = f(x)
+            f_at_y = f(y)
+            delta_f = f_at_y - f_at_x
+            result.nfev += 2
+
+            # Accept new point if it is downhill.
+            if f_at_y - f_at_x <= 0.:
+                x = y
+                m_1 += 1
+                f_at_c.append(f_at_y)
+                current_chain.append(x)
+
+            # Otherwise, use acceptance criteria.
+            elif np.exp(-delta_f / c) > np.random.random():
+                x = y
+                m_2 += 1
+                f_at_c.append(f_at_y)
+                current_chain.append(x)
 
         if callback is not None:
             callback(iteration=n, x=x, chain=current_chain, c=c)
 
         f_bar = np.mean(f_at_c)
         sigma = np.std(f_at_c)
+
+        # Prevent sigma from being 0 to avoid divide-by-zero error.
         if sigma == 0.:
             sigma = 1e-14
 
-        if n > 0:
-            f_bar_s_old = f_bar_s
-            f_bar_s = (1.0 - gamma) * f_bar_s + gamma * f_bar
-        else:
+        # Initialize f_bar_0 and smoothed f_bar if at first iteration.
+        if n == 0:
             f_bar_s = f_bar
             f_bar_0 = np.mean(f_at_c)
 
+        # Otherwise, update smoothed f_bar and track previous value for finite difference.
+        else:
+            f_bar_s_old = f_bar_s
+            f_bar_s = (1.0 - gamma) * f_bar_s + gamma * f_bar
+
+        # Decrement C; record prevous C for finite difference.
         c_old = c
         c = c * (1. + (c * np.log(1. + delta)) / (3. * sigma))**-1
 
-        y = f_record
-        f_star = 0
-
         dc = c - c_old
 
+        # Begin checking stop condition after first iteration.
         if n > 0 and dc != 0.0:
+
+            # Calculate differene of smoothed f bar.
             d_fbar_s = f_bar_s - f_bar_s_old
 
+            # Evaluate stop condition.
             stop_term = np.abs((d_fbar_s / dc) * (c / f_bar_0))
             should_stop = stop_term < stop_eps
 
+            # Break out of outer loop when stop condition is reached.
             if should_stop:
                 break
 
         n += 1
 
-    return x, n
+    # If requested, improve solution by running a local search starting at solution.
+    if polish:
+        result_polish = polish_minimizer(f, x0=x, jac=jac, **polish_kwargs)
+        result.nfev += result_polish.nfev
+        result.njev += result_polish.njev
+        result.fun = result_polish.fun
+        result.jac = result_polish.jac
+        result.x = result_polish.x
+
+    return result
+
+
+#obj = zoo.Zoo().get('BR').make_explicit()
+#f, grad = obj.f, obj.grad
+
+# res = simulated_annealing(f=f,
+#                          jac=grad,
+#                          domain=np.array(obj.domain),
+#                          l0=20,
+#                          delta=1.5,
+#                          stop_eps=1e-4,
+#                          chi=0.9,
+#                          gamma=0.01,
+#                          t=0.5,
+#                          polish=True,
+#                          polish_kwargs={'tol': 1e-7}
+#                          )
+
+# print(res)

@@ -18,11 +18,11 @@ objectives = [Zoo().get('BR').make_explicit(), ]
 
 TOL = 1e-7
 
-NUM_RUNS = 20
+NUM_RUNS = 50
 TOL_SAME = 1e-5
 
-MS_MAX_ITER = 10000
-MS_TAU = 1e-5
+MS_MAX_ITER = 100
+MS_TAU = 1e-4
 MS_RHO = 0.8
 MS_EPS = 1e-4
 
@@ -31,7 +31,7 @@ SA_DELTA = 1.1
 SA_STOP_EPS = 1e-4
 SA_CHI = 0.9
 SA_GAMMA = 1e-2
-SA_DESC_AFFINITY = 0.5
+SA_T = 0.5
 
 results = dict()
 
@@ -39,29 +39,20 @@ for obj_idx, obj in enumerate(objectives):
 
     print(f'Benchmark {obj_idx+1} of {len(objectives)}: {obj.name_short}-{obj.name}')
 
-    def f(x):
-        global f_calls
-        f_calls += 1
-        return obj.f(x)
-
-    def grad(x):
-        global grad_calls
-        grad_calls += 1
-        return obj.grad(x)
+    f, grad = obj.f, obj.grad
 
     # Do Basin-hopping benchmark.
     print(f'  Method BH (Basin-hopping)')
     x_solutions = list()
     for idx_run in range(NUM_RUNS):
 
-        f_calls = 0
-        grad_calls = 0
-        x0 = sa._gen_point_a(np.array(obj.domain))
-        res = optim.basinhopping(f, x0, minimizer_kwargs={'tol': TOL})
-        x = res.x
-        x_solutions.append(x)
-        print('  Run {} of {}: x={}, #f evals={}, #grad evals={}'.format(
-            idx_run + 1, NUM_RUNS, x, f_calls, grad_calls))
+        s = np.array(obj.domain)
+        x0 = np.random.uniform(size=obj.dims) * (s[1] - s[0]) + s[0]
+        result = optim.basinhopping(f, x0, minimizer_kwargs={'tol': TOL})
+#        x = res.x
+        x_solutions.append(result.x)
+        print('  Run {} of {}: x={}, nfev={}, njev={}'.format(
+            idx_run + 1, NUM_RUNS, result.x, result.nfev, result.njev))
     print()
 
     # Do Differential Evolution benchmark.
@@ -70,13 +61,12 @@ for obj_idx, obj in enumerate(objectives):
     x_solutions = list()
     for idx_run in range(NUM_RUNS):
 
-        f_calls = 0
-        grad_calls = 0
-        res = optim.differential_evolution(f, bounds=bounds, tol=TOL)
-        x = res.x
-        x_solutions.append(x)
-        print('  Run {} of {}: x={}, #f evals={}, #grad evals={}'.format(
-            idx_run + 1, NUM_RUNS, x, f_calls, grad_calls))
+        result = optim.differential_evolution(f, bounds=bounds, tol=TOL)
+        result.njev = 0
+
+        x_solutions.append(result.x)
+        print('  Run {} of {}: x={}, nfev={}, njev={}'.format(
+            idx_run + 1, NUM_RUNS, result.x, result.nfev, result.njev))
     print()
 
     # Do Multi-start benchmark.
@@ -84,20 +74,19 @@ for obj_idx, obj in enumerate(objectives):
     x_solutions = list()
     for idx_run in range(NUM_RUNS):
 
-        f_calls = 0
-        grad_calls = 0
-        x, f_best, n = multistart(f,
-                                  grad,
-                                  np.array(obj.domain),
-                                  MS_MAX_ITER,
-                                  tol=TOL,
-                                  rho=MS_RHO,
-                                  eps=MS_EPS)
+        result = multistart(f,
+                            grad,
+                            np.array(obj.domain),
+                            MS_MAX_ITER,
+                            tau=MS_TAU,
+                            rho=MS_RHO,
+                            eps=MS_EPS,
+                            polish=True,
+                            tol=TOL)
 
-#        x = res.x
-        x_solutions.append(x)
-        print('  Run {} of {}: x={}, #f evals={}, #grad evals={}'.format(
-            idx_run + 1, NUM_RUNS, x, f_calls, grad_calls))
+        x_solutions.append(result.x)
+        print('  Run {} of {}: x={}, nfev={}, njev={}'.format(
+            idx_run + 1, NUM_RUNS, result.x, result.nfev, result.njev))
     print()
 
     # Do Simulated Annealing benchmark.
@@ -105,22 +94,19 @@ for obj_idx, obj in enumerate(objectives):
     x_solutions = list()
     for idx_run in range(NUM_RUNS):
 
-        f_calls = 0
-        grad_calls = 0
-        x, n = simulated_annealing(f,
-                                   grad,
-                                   np.array(obj.domain),
-                                   l0=SA_L0,
-                                   delta=SA_DELTA,
-                                   stop_eps=SA_STOP_EPS,
-                                   chi=SA_CHI,
-                                   gamma=SA_GAMMA,
-                                   descent_affinity=SA_DESC_AFFINITY,
-                                   polish=True,
-                                   tol=TOL)
+        result = simulated_annealing(f,
+                                     grad,
+                                     np.array(obj.domain),
+                                     l0=SA_L0,
+                                     delta=SA_DELTA,
+                                     stop_eps=SA_STOP_EPS,
+                                     chi=SA_CHI,
+                                     gamma=SA_GAMMA,
+                                     t=SA_T,
+                                     polish=True,
+                                     polish_kwargs={'tol': TOL})
 
-#        x = res.x
-        x_solutions.append(x)
-        print('  Run {} of {}: x={}, #f evals={}, #grad evals={}'.format(
-            idx_run + 1, NUM_RUNS, x, f_calls, grad_calls))
+        x_solutions.append(result.x)
+        print('  Run {} of {}: x={}, nfev={}, njev={}'.format(
+            idx_run + 1, NUM_RUNS, result.x, result.nfev, result.njev))
     print()

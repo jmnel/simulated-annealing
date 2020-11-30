@@ -1,57 +1,66 @@
+from typing import Callable
+
 import numpy as np
+import scipy.optimize as optim
 
 from step_size import armijo_step, gss
 from utils import grad_approx
 
 
-def grad_descent(f,
-                 x0,
-                 grad=None,
-                 tol=1e-14,
-                 max_iterations=10000,
-                 ls_method='exact',
-                 eps=1e-14,
-                 **kwargs):
-    """
-    Perform unconstrained minimization of f by gradient descent.
+# def _defult_ls(f, x0, jac, ls_kwargs):
+#    return armijo_step(f, x0, jac, ls_kwargs)
 
-    Args:
-        f:                  Function to minimize.
-        x0:                 Initial position.
-        grad:               Gradient of f.
-        tol:                Desired tolerance.
-        max_iterations:     Maximum number of iterations.
-        ls_method:          Line search method; either 'exact' or 'armijo'.
+def _defult_ls(f, x0, jac, ls_kwargs):
+    return gss(f, x0, **ls_kwargs)
 
-    Returns:
-        Dict with solution and various information.
 
-    """
+def grad_descent(f: Callable,
+                 x0: np.ndarray,
+                 jac: Callable,
+                 tol: float = 1e-14,
+                 max_iterations=200,
+                 ls_method: Callable = _defult_ls,
+                 ls_kwargs={'a': 0.0, 'b': 1.0}):
 
     x = x0
 
-    if grad is None:
-        def grad(x): return grad_approx(f, x)
+    nfev = 0
+    njev = 0
 
     # Do main algorithm loop.
     for i in range(max_iterations):
 
-        g = grad(x)
+        g = jac(x)
+        njev += 1
 
-        # Exit if gradient is close to 0. We are likely at a local minimum.
+        # Exit if jacient is close to 0. We are likely at a local minimum.
         if np.linalg.norm(g) <= tol:
-            return x
+            return optim.OptimizeResult(x=x,
+                                        success=True,
+                                        status=0,
+                                        message='found optimal value',
+                                        fun=f(x),
+                                        jac=g,
+                                        nfev=nfev,
+                                        njev=njev,
+                                        nit=i)
 
-        # If requested, peform Armijo step size selection.
-        if ls_method == 'armijo':
-            t = armijo_step(lambda t: f(x - t * g),
-                            lambda t: np.dot(-grad(x - t * g), g),
-                            kwargs['l0'], kwargs['alpha'], kwargs['rho'])
+            ls_result = ls_method(f=lambda t: f(x - t * g),
+                                  jac=lambda t: np.dot(-jac(x - t * g), g),
+                                  **ls_kwargs)
 
-        # Otherwise, use exact line search.
-        elif ls_method == 'exact':
-            t = gss(lambda t: f(x - t * g), 0., 1.)
+            t = ls_result.x
+            nfev += ls_result.nfev
+            njev += ls_result.njev
 
-        x = x - t * g
+            x = x - t * g
 
-    return x
+    return optim.OptimizeResult(x=x,
+                                success=False,
+                                status=-1,
+                                message='max iteratios exceeded',
+                                fun=f(x),
+                                jac=g,
+                                nfev=nfev,
+                                njev=njev,
+                                nit=max_iterations)

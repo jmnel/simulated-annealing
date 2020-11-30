@@ -79,3 +79,5 @@ class Schubert(Benchmark):
             self.xmin = [[1., 1., 1.], ]
             self.domain = [-10. * np.ones(n), 10. * np.ones(n)]
             self.domain_plot = None
+
+        self.dims = n

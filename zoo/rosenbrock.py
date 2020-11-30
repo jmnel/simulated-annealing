@@ -10,6 +10,7 @@ class Rosenbrock(Benchmark):
 
         self.name = 'Rosenbrock'
         self.name_short = 'RB'
+        self.dims = 2
         x = sym.IndexedBase('x')
         i = sym.Idx('i')
         x1, x2 = x[1], x[2]

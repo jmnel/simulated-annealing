@@ -12,6 +12,7 @@ class GoldsteinPrice(Benchmark):
         self.name_short = 'GP'
         x1, x2 = sym.symbols('x_1 x_2')
         self.x = [x1, x2]
+        self.dims = 2
 
         self.params = dict()
 

@@ -20,8 +20,9 @@ class Shekel(Benchmark):
         self.name_short = f'S{m}'
 
         n = 4
+        self.dims = n
         x = sym.IndexedBase('x')
-        self.x = [x[i] for i in range(0, n)]
+        self.x = [x[i] for i in range(n)]
 
         var_x = sym.Matrix(self.x)
 

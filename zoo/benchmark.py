@@ -38,6 +38,10 @@ class Benchmark():
             .subs(subs_list)
 
         bench._f = sym.lambdify(bench.x, f)
+
+#        pprint([sym.diff(f, x_i) for x_i in bench.x])
+#        exit()
+
         bench._grad = [sym.lambdify(bench.x, sym.diff(f, x_i)) for x_i in bench.x]
 
         assert isinstance(bench.xmin, Sequence)
@@ -61,6 +65,7 @@ class Benchmark():
         return bench
 
     def f(self, x):
+
         if self._f is None:
             raise ValueError('benchmark must be made explicit first before evaluation')
 

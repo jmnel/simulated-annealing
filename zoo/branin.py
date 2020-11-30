@@ -10,6 +10,7 @@ class Branin(Benchmark):
 
         self.name = 'Branin'
         self.name_short = 'BR'
+        self.dims = 2
 
         x = sym.IndexedBase('x')
         i = sym.Idx('i')
