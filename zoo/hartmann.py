@@ -58,7 +58,7 @@ class Hartmann6(Benchmark):
     def __init__(self):
         super().__init__()
 
-        self.name = 'Hartmann\'s family n=3'
+        self.name = 'Hartmann\'s family n=6'
         self.name_short = 'H6'
 
         m, n = 4, 6

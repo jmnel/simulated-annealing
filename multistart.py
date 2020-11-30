@@ -64,6 +64,9 @@ def multistart(f: Callable,
     result.nfev = 0
     result.njev = 0
 
+    x_best = None
+    f_best = float('inf')
+
     for n in range(1, max_iterations):
 
         # Generate points in S2 and discard ones not in S.
@@ -92,9 +95,6 @@ def multistart(f: Callable,
         deltas.append(delta)
 
         sigma_2 = np.var(deltas)
-
-        x_best = None
-        f_best = float('inf')
 
         if f_ls < f_best:
             f_best = f_ls
