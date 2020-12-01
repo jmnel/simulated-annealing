@@ -1,12 +1,12 @@
 # Simulated Annealing
 
-![](figures/fig-traj.pdf?raw=true)
-
 Global stochastic optimization method
 
 ## Description
 
 A numerical analysis and implementation of *Global Optimization and Simulated Annealing* by A. Dekkers and E. Aarts.
+
+![](figures/fig-traj.svg?raw=true)
 
 ## Getting Started
 
@@ -16,10 +16,10 @@ A numerical analysis and implementation of *Global Optimization and Simulated An
 * NumPy
 * SciPy
 
-### Executing program
+### API
 
-* How to run the program
-* Step-by-step bullets
+Use our implementation of Simulated Annealing with the following API.
+
 ```
 sa.simulated_annealing(f, jac, domain, l0, delta, stop_eps, chi, gamma, t, init_trials = 200,
                        callback = None, tol = 1e-7, polish = True, polish_minimizer = optim.minimize, 
@@ -64,12 +64,14 @@ sa.simulated_annealing(f, jac, domain, l0, delta, stop_eps, chi, gamma, t, init_
         
                             
 
-## Help
+## Code organisation
 
-Any advise for common problems or issues.
-```
-command to run if program contains helper info
-```
+* `zoo.Zoo` provides an easy-to-use interface to use the various benchmark functions.
+* `compare2.py` performs the main comparisons between the different methods.
+* `compare.json` contains exhaustive detail run logs from `compare2.py`.
+* `multistart.py` implements the Multi-start optimization algorithm using the double-box trick stopping rule.
+* The remaining `.py` files are used for generating misc. figures for the report.
+
 
 ## Authors
 

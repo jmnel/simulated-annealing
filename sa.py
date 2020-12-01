@@ -23,10 +23,35 @@ def simulated_annealing(f: Callable,
                         polish: bool = True,
                         polish_minimizer: Callable = optim.minimize,
                         polish_kwargs: Dict = dict()):
+    """
+
+    Globally minimize f on bounded region using Simulated Annealing.
+
+    Args:
+        f:                  Function to minimize.
+        jac:                Jacobian of f.
+        domain:             Region on which to minimize f.
+        l0:                 Basic length of Markov chains.
+        delta:              Cooling schedule decrement rate.
+        stop_eps:           Stop condition control parameter.
+        chi:                Initial acceptance parameter.
+        gamma:              Smoothing parameter.
+        t:                  Local search affinity.
+        init_trials:        Number of initial transitions to initialize schedule.
+        callback:           Called on each iteration of global phase.
+        tol:                Desire final stopping tolerance of solution.
+        polish:             Refine final solution by running some local search method.
+        polish_minimizer:   Minimization function to use for polishing.
+        polish_kwargs:      Keyword arguments to pass to polish minimizer.
+
+    Returns:
+        scipy.optimize.OptimizeResult
+
+    """
+
+    MIN_TRANSITIONS = 10
 
     dims = domain.shape[1]
-
-#    print(f'dims={dims}')
 
     if 'tol' not in polish_kwargs:
         polish_kwargs['tol'] = tol
@@ -109,7 +134,9 @@ def simulated_annealing(f: Callable,
         f_at_c = [f(x), ]
 
         current_chain = list()
-        while len(f_at_c) < 10:
+
+        # Repeat until some minimum number of transitions are made.
+        while len(f_at_c) < MIN_TRANSITIONS:
             for i in range(l):
 
                 # Generate next candidiate in Markov chain.
@@ -142,8 +169,8 @@ def simulated_annealing(f: Callable,
         sigma = np.std(f_at_c)
 
         # Prevent sigma from being 0 to avoid divide-by-zero error.
-#        if sigma == 0.:
-#            sigma = 1e-14
+        if sigma == 0.:
+            sigma = 1e-14
 
         # Initialize f_bar_0 and smoothed f_bar if at first iteration.
         if n == 0:
@@ -187,22 +214,3 @@ def simulated_annealing(f: Callable,
         result.x = result_polish.x
 
     return result
-
-
-#obj = zoo.Zoo().get('BR').make_explicit()
-#f, grad = obj.f, obj.grad
-
-# res = simulated_annealing(f=f,
-#                          jac=grad,
-#                          domain=np.array(obj.domain),
-#                          l0=20,
-#                          delta=1.5,
-#                          stop_eps=1e-4,
-#                          chi=0.9,
-#                          gamma=0.01,
-#                          t=0.5,
-#                          polish=True,
-#                          polish_kwargs={'tol': 1e-7}
-#                          )
-
-# print(res)
