@@ -69,4 +69,5 @@ ax.set_xlabel('$x_1$')
 ax.set_ylabel('$x_2$')
 
 fig.savefig('figures/fig-traj.pdf', dpi=200)
+fig.savefig('figures/fig-traj.svg', dpi=200)
 # plt.show()

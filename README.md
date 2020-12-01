@@ -1,6 +1,6 @@
 # Simulated Annealing
 
-![](figures/table 1-1.png?raw=true)
+![](figures/fig-traj.pdf?raw=true)
 
 Global stochastic optimization method
 
