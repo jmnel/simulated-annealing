@@ -109,30 +109,31 @@ def simulated_annealing(f: Callable,
         f_at_c = [f(x), ]
 
         current_chain = list()
-        for i in range(l):
+        while len(f_at_c) < 10:
+            for i in range(l):
 
-            # Generate next candidiate in Markov chain.
-            y = gen_point_b(x0=x)
+                # Generate next candidiate in Markov chain.
+                y = gen_point_b(x0=x)
 
-            # Evaluate f at x and y; this is wasteful and can be improved.
-            f_at_x = f(x)
-            f_at_y = f(y)
-            delta_f = f_at_y - f_at_x
-            result.nfev += 2
+                # Evaluate f at x and y; this is wasteful and can be improved.
+                f_at_x = f(x)
+                f_at_y = f(y)
+                delta_f = f_at_y - f_at_x
+                result.nfev += 2
 
-            # Accept new point if it is downhill.
-            if f_at_y - f_at_x <= 0.:
-                x = y
-                m_1 += 1
-                f_at_c.append(f_at_y)
-                current_chain.append(x)
+                # Accept new point if it is downhill.
+                if f_at_y - f_at_x <= 0.:
+                    x = y
+                    m_1 += 1
+                    f_at_c.append(f_at_y)
+                    current_chain.append(x)
 
-            # Otherwise, use acceptance criteria.
-            elif np.exp(-delta_f / c) > np.random.random():
-                x = y
-                m_2 += 1
-                f_at_c.append(f_at_y)
-                current_chain.append(x)
+                # Otherwise, use acceptance criteria.
+                elif np.exp(-delta_f / c) > np.random.random():
+                    x = y
+                    m_2 += 1
+                    f_at_c.append(f_at_y)
+                    current_chain.append(x)
 
         if callback is not None:
             callback(iteration=n, x=x, chain=current_chain, c=c)
@@ -141,8 +142,8 @@ def simulated_annealing(f: Callable,
         sigma = np.std(f_at_c)
 
         # Prevent sigma from being 0 to avoid divide-by-zero error.
-        if sigma == 0.:
-            sigma = 1e-14
+#        if sigma == 0.:
+#            sigma = 1e-14
 
         # Initialize f_bar_0 and smoothed f_bar if at first iteration.
         if n == 0:
